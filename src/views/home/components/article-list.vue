@@ -1,5 +1,5 @@
 <template>
-  <div class='article-list'>
+  <div class="article-list">
     <!--
       List 列表组件：瀑布流滚动加载，用于展示长列表。
 
@@ -24,7 +24,8 @@
     <!-- 错误提示 refresh 下拉刷新时触发-->
     <van-pull-refresh v-model="isreFreshLoading" :success-text="reFreshSuccessText" success-duration="1500" @refresh="onRefresh">
       <van-list v-model="loading" :error.sync="error" error-text="请求失败，点击重新加载" :finished="finished" finished-text="没有更多了" @load="onLoad">
-        <van-cell v-for="(article, index) in list" :key="index" :title="article.title" />
+        <article-item v-for="article in list" :key="article.art_id" :article='article'></article-item>
+        <!-- <van-cell v-for="(article, index) in list" :key="index" :title="article.title" /> -->
       </van-list>
     </van-pull-refresh>
   </div>
@@ -32,9 +33,12 @@
 
 <script>
 import { getArticles } from '@/api/article.js'
+import ArticleItem from '@/components/article-item'
 export default {
   name: 'ArticleList',
-  components: {},
+  components: {
+    ArticleItem
+  },
   props: {
     channel: {
       type: Object,
@@ -65,7 +69,7 @@ export default {
           timestamp: this.timestamp || Date.now(), // 时间戳，请求新的推荐数据传当前的时间戳，请求历史推荐传指定的时间戳
           with_top: 1 // 是否包含置顶，进入页面第一次请求时要包含置顶文章，1-包含置顶，0-不包含
         })
-        console.log(data)
+        // console.log(data)
 
         // if (Math.random() > 0.5) {
         //   JSON.parse('sefsferfeferfe')
@@ -82,8 +86,9 @@ export default {
         if (results.length) {
           // 更新获取下一页数据的时间戳
           this.timestamp = results.pre_timestamp
+        } else {
+          this.finished = true
         }
-        this.finished = true
       } catch (err) {
         // console.log('获取文章列表失败！', err)
         // this.$toast('获取文章列表失败！')
