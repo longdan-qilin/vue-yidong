@@ -120,7 +120,7 @@ export default {
 }
 </script>
 
-<style lang="less">
+<style lang="less" scoped>
 .my-container {
   .header {
     height: 361px;

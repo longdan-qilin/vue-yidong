@@ -6,6 +6,7 @@ Vue.use(VueRouter)
 const routes = [
   // 导入登录组件
   { path: '/login', name: 'login', component: () => import('@/views/login') },
+  { path: '/search', name: 'search', component: () => import('@/views/search') },
   {
     path: '/',
     name: 'layout',

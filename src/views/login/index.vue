@@ -148,7 +148,7 @@ export default {
 }
 </script>
 
-<style lang="less">
+<style lang="less" scoped>
 .login-container {
   .toutiao {
     font-size: 37px;

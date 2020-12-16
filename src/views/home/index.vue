@@ -3,16 +3,17 @@
   <div class="home-container">
     <!-- 导航栏 -->
     <van-nav-bar class="page-nav-bar" fixed>
-      <van-button class="search-btn" slot="title" type="info" size="small" round icon="search">搜索</van-button>
+      <van-button class="search-btn" slot="title" type="info" size="small" round icon="search" to="/search">搜索</van-button>
     </van-nav-bar>
     <!-- /导航栏 -->
 
-    <!--
+    <!-- 频道列表
     通过v-model绑定当前激活标签对应的索引值，默认情况下启用第一个标签
     通过animated属性可以开启切换标签内容时的转场动画
     通过swipeable属性可以开启滑动切换标签页
+    swipe-threshold='3' 滚动阈值，标签数量超过阈值且总宽度超过标签栏宽度时开始横向滚动
     -->
-    <van-tabs class="channel-tabs" v-model="active" animated swipeable>
+    <van-tabs class="channel-tabs" v-model="active" animated swipeable swipe-threshold="3">
       <van-tab v-for="channel in channels" :key="channel.id" :title="channel.name">
         <!-- 文章列表 -->
         <!-- channel 文章列表要知道是哪个频道列表 -->
@@ -20,10 +21,18 @@
         <!-- /文章列表 -->
       </van-tab>
       <div slot="nav-right" class="placeholder"></div>
-      <div slot="nav-right" class="hamburger-btn">
+      <div slot="nav-right" class="hamburger-btn" @click="ischannelEditShow = true">
         <i class="toutiao toutiao-gengduo"></i>
       </div>
     </van-tabs>
+    <!-- / 频道列表 -->
+
+    <!-- 频道编辑弹出层 -->
+    <van-popup v-model="ischannelEditShow" closeable position="bottom" close-icon-position="top-left" :style="{ height: '100%' }">
+      <channel-edit :my-channels="channels" :active="active" @update-active="onUpdateActive" @update-delete="updateDelete"></channel-edit>
+    </van-popup>
+    <!-- /频道编辑弹出层  -->
+
     <!-- 子路由出口 -->
     <router-view></router-view>
     <!-- /子路由出口 -->
@@ -33,7 +42,10 @@
 <script>
 // 1. 导入 获取频道列表的方法
 import { getUserChannels } from '@/api/user.js'
+import { mapState } from 'vuex'
+import { getItem } from '@/utils/storage'
 import ArticleList from './components/article-list.vue'
+import ChannelEdit from './components/channel-edit.vue'
 export default {
   name: 'HomeIndex',
   props: {},
@@ -41,11 +53,14 @@ export default {
     return {
       active: 0,
       // 4. 定义数据接收频道列表
-      channels: []
+      channels: [],
+      // 是否显示弹出层
+      ischannelEditShow: false
     }
   },
   components: {
-    ArticleList
+    ArticleList,
+    ChannelEdit
   },
   created () {
     // 3. 调用加载频道列表数据的方法
@@ -55,14 +70,43 @@ export default {
     // 2. 定义加载频道列表数据的方法
     async loadChannels () {
       try {
-        const { data } = await getUserChannels()
-        this.channels = data.data.channels
+        let channels = []
+        if (this.user) {
+          // 登录状态
+          const { data } = await getUserChannels()
+          channels = data.data.channels
+        } else {
+          // 未登录状态
+          const loadChannels = getItem('TOUTIAO-CHANNELS')
+          if (loadChannels) {
+            // 本地存储有数据  直接获取
+            channels = loadChannels
+          } else {
+            // 本地存储没有数据 请求数据
+            const { data } = await getUserChannels()
+            channels = data.data.channels
+          }
+        }
+        this.channels = channels
       } catch (err) {
         this.$toast('获取频道列表数据失败')
       }
+    },
+    // 通过自定义事件 接受子组件传参index 改变父组件active
+    onUpdateActive (index, ischannelEditShow) {
+      this.active = index
+      // 编辑状态 弹出层还在 不是编辑状态 弹出层隐藏
+      this.ischannelEditShow = ischannelEditShow
+    },
+    // 删除我的频道 通过子组件传递的id
+    updateDelete (id) {
+      const index = this.channels.findIndex(item => item.id === id)
+      this.channels.splice(index, 1)
     }
   },
-  computed: {}
+  computed: {
+    ...mapState(['user'])
+  }
 }
 </script>
 
