@@ -24,7 +24,7 @@
     <!-- 错误提示 refresh 下拉刷新时触发-->
     <van-pull-refresh v-model="isreFreshLoading" :success-text="reFreshSuccessText" success-duration="1500" @refresh="onRefresh">
       <van-list v-model="loading" :error.sync="error" error-text="请求失败，点击重新加载" :finished="finished" finished-text="没有更多了" @load="onLoad">
-        <article-item v-for="article in list" :key="article.art_id" :article='article'></article-item>
+        <article-item v-for="(article,index) in list" :key="index" :article='article'></article-item>
         <!-- <van-cell v-for="(article, index) in list" :key="index" :title="article.title" /> -->
       </van-list>
     </van-pull-refresh>

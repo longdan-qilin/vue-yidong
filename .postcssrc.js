@@ -9,7 +9,9 @@ module.exports = {
       rootValue({ file }) {
         return file.includes('vant') ? 37.5 : 75
       },
-      propList: ['*']
+      propList: ['*'],
+      // 配置不要转换的样式资源
+      exclude: 'git-markdown'
     }
   }
 }

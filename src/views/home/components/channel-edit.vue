@@ -125,7 +125,7 @@ export default {
         try {
           await addUserChannel({
             id: channel.id,
-            sel: this.myChannels.length
+            seq: this.myChannels.length
           })
         } catch (err) {
           console.log('添加失败！', err)

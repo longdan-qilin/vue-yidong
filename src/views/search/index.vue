@@ -66,11 +66,14 @@ export default {
       // 存储搜索历史记录
       // 要求：不要重复历史记录 最新的排在最前面
       // 展示搜索结果
-      const index = this.searchHistorys.indexOf(value)
-      if (index !== -1) {
-        this.searchHistorys.splice(index, 1)
-      }
+      // const index = this.searchHistorys.indexOf(value)
+      // if (index !== -1) {
+      //   this.searchHistorys.splice(index, 1)
+      // }
       this.searchHistorys.unshift(value)
+      this.searchHistorys = [...new Set(this.searchHistorys)]
+      console.log(this.searchHistorys)
+      // 搜索结果是否存在
       this.isResultShow = true
     },
     onCancel () {

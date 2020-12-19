@@ -63,13 +63,16 @@ export default {
     },
     // 关键字高亮效果
     hightlight (text) {
+      // 创建匹配对应文本的替换文本
       const HighLightStr = `<span class='active'>${this.searchText}</span>`
       // 正则表达式 // 中间的内容都会当做匹配字符来使用，而不是数据变量
       // 如果需要根据数据变量动态的创建正则表达式  则手动 new RegExp
       //  new RegExp  new 一个正则表达式 构造函数
       // 参数1：匹配模式字符串 他会根据这个字符串创建正则对象
       // 参数2：匹配模式 写到字符串中
-      const reg = new RegExp(this.searchText, 'gi')
+      const str = this.searchText.replace(/([*.?+$^(){}|\\/])/g, '\\$1')
+      // 创建匹配对应文本的正则表达式
+      const reg = new RegExp(str, 'gi')
       return text.replace(reg, HighLightStr)
     }
   }
@@ -78,7 +81,7 @@ export default {
 
 <style lang="less" scoped>
 .search-suggestion {
-/deep/ span.active {
+  /deep/ span.active {
     color: #3296fa;
   }
 }
