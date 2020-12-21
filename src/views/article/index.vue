@@ -55,16 +55,45 @@
           ref="article-content"
           v-html="article.content"
         ></div>
+        <!-- /文章内容 -->
+
         <van-divider>正文结束</van-divider>
+
+        <!-- 文章评论列表 -->
+        <common-list
+          :list="commonList"
+          @reply-click="onReplyClick"
+          :source="article.art_id"
+          @update-count="totalCommonCount = $event.total_count"
+        />
+        <!-- /文章评论列表 -->
+
         <!-- 底部区域 -->
         <div class="article-bottom">
-          <van-button class="comment-btn" type="default" round size="small">写评论</van-button>
-          <van-icon name="comment-o" badge="123" color="#777" />
-          <collect-article v-model="article.is_collected" :articleId='article.art_id' class="btn-item" />
-          <like-article v-model="article.attitude" :articleId='article.art_id' class="btn-item" />
+          <van-button
+            class="comment-btn"
+            type="default"
+            round
+            size="small"
+            @click="isPostShow = true"
+            >写评论</van-button
+          >
+          <van-icon name="comment-o" :badge="totalCommonCount" color="#777" />
+          <collect-article
+            v-model="article.is_collected"
+            :articleId="article.art_id"
+            class="btn-item"
+          />
+          <like-article v-model="article.attitude" :articleId="article.art_id" class="btn-item" />
           <van-icon name="share" color="#777777"></van-icon>
         </div>
         <!-- /底部区域 -->
+
+        <!-- 评论弹出层 -->
+        <van-popup v-model="isPostShow" position="bottom">
+          <comment-post @post-success="onPostSuccess" :target="article.art_id" />
+        </van-popup>
+        <!-- / 评论弹出层 -->
       </div>
       <!-- /加载完成-文章详情 -->
 
@@ -83,6 +112,13 @@
       </div>
       <!-- /加载失败：其它未知错误（例如网络原因或服务端异常） -->
     </div>
+
+    <!-- 回复弹出层 -->
+    <!-- v-if 条件渲染 true 渲染元素节点 false 不渲染 -->
+    <van-popup v-model="isReplyShow" position="bottom" style="height: 100%;">
+      <comment-reply v-if="isReplyShow" @close="isReplyShow = false" :comment="currentComment" />
+    </van-popup>
+    <!-- /回复弹出层 -->
   </div>
 </template>
 
@@ -91,6 +127,9 @@ import { getArticleById } from '@/api/article'
 import followUser from '@/components/follow-user'
 import CollectArticle from '@/components/collect-article'
 import LikeArticle from '@/components/like-article'
+import CommonList from './components/common-list'
+import CommentPost from './components/comment-post'
+import CommentReply from './components/comment-reply'
 // 加载图片预览
 import { ImagePreview } from 'vant'
 // ImagePreview({
@@ -107,7 +146,17 @@ export default {
   components: {
     followUser,
     CollectArticle,
-    LikeArticle
+    LikeArticle,
+    CommonList,
+    CommentPost,
+    CommentReply
+  },
+  // provide 给所有的后代组件提供数据
+  // 不能滥用 只能对使用频率高的用
+  provide: function () {
+    return {
+      articleId: this.articleId
+    }
   },
   props: {
     articleId: {
@@ -122,7 +171,17 @@ export default {
       // 默认加载loading
       loading: true,
       // 默认err状态
-      errstatus: 0
+      errstatus: 0,
+      // 评论总数
+      totalCommonCount: 0,
+      // 弹出层显示与隐藏
+      isPostShow: false,
+      // 评论列表
+      commonList: [],
+      // 回复弹出层显示与隐藏
+      isReplyShow: false,
+      // 当前的评论对象
+      currentComment: {}
     }
   },
   computed: {},
@@ -186,6 +245,21 @@ export default {
           })
         }
       })
+    },
+    // 通过父组件来实现一系列功能
+    onPostSuccess (data) {
+      // 关闭弹出层
+      this.isPostShow = false
+      // 将发布内容显示到列表数据顶部
+      this.commonList.unshift(data.new_obj)
+    },
+    // 回复评论弹出层
+    onReplyClick (comment) {
+      console.log(comment)
+      // 获得的评论对象赋值给自定义的当前评论对象
+      this.currentComment = comment
+      // 弹出 弹出层
+      this.isReplyShow = true
     }
   }
 }
@@ -194,6 +268,7 @@ export default {
 <style lang="less" scoped>
 @import url('./git-markdown.css');
 .article-container {
+  // .van-nav-bar {}
   /deep/ .van-nav-bar__left {
     position: absolute;
     top: 14px;
