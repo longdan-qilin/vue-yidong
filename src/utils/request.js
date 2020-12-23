@@ -29,8 +29,7 @@ const request = axios.create({
     // return JSON.parse(data)
   }]
 })
-
-export default request
+const requestToken = axios.create()
 
 // 请求拦截器
 // Add a request interceptor
@@ -38,7 +37,7 @@ request.interceptors.request.use(function (config) {
   // Do something before request is sent
   // 请求发起会经过这里
   // config：本次请求的请求配置对象
-  console.log(config)
+
   const { user } = store.state
   if (user && user.token) {
     config.headers.Authorization = `Bearer ${user.token}`
@@ -52,13 +51,71 @@ request.interceptors.request.use(function (config) {
 })
 
 // 响应拦截器
-// Add a response interceptor
-// axios.interceptors.response.use(function (response) {
-//   // Any status code that lie within the range of 2xx cause this function to trigger
-//   // Do something with response data
-//   return response
-// }, function (error) {
-//   // Any status codes that falls outside the range of 2xx cause this function to trigger
-//   // Do something with response error
-//   return Promise.reject(error)
-// })
+
+request.interceptors.response.use(function (response) {
+  return response
+}, async function (error) {
+  const status = error.response.status
+  if (status === 400) {
+    this.$toast.fail('客户端请求参数错误')
+  } else if (status === 401) {
+    const { user } = store.state
+    if (!user || !user.refresh_token) {
+      /*
+        直接去登录吧 没办法了 跳转到登录页面
+        this.$router.push => 组件里面可以这样
+        router.push('/login)
+        登录路由其实没有必要 不期望保留历史记录
+      */
+      // return this.$router.push('/login')
+      return redirectLogin()
+    }
+    /*
+      用 refresh-token 获取新的 token
+      直接用现有的 request 去请求 假如请求的结果还是401 会形成死循环
+      request({})
+    */
+    try {
+      const { data } = await requestToken({
+        method: 'PUT',
+        url: 'http://ttapi.research.itcast.cn/app/v1_0/authorizations',
+        headers: {
+          Authorization: `Bearer ${user.refresh_token}`
+        }
+      })
+      console.log(data)
+      user.token = data.data.token
+      // 用新的 token 更新 store 里面的无效的 token
+      store.commit('setUser', user)
+      // 把之前的错误请求重新完整的再发一次
+      // 这里发送请求，带过去的 token 确实是无效的 token，但是没关系，因为这个请求会经过自己的请求拦截器
+      // 自己请求拦截器里面会有重新获取 token 的操作
+      return request(error.config)
+    } catch (err) {
+      // 用 refresh_token 换取 token 的时候也出错了
+      // return this.$router.replace('/login')
+      return redirectLogin()
+    }
+    // this.$toast.fail('无效的token')
+  } else if (status === 403) {
+    this.$toast.fail('客户端没有权限')
+  } else if (status === 404) {
+    this.$toast.fail('请求资源不存在')
+  } else if (status === 405) {
+    this.$toast.fail('请求方法不支持')
+  } else if (status === 500) {
+    this.$toast.fail('服务器出错啦')
+  }
+  return Promise.reject(error)
+})
+
+function redirectLogin () {
+  this.$router.replace({
+    name: 'login',
+    query: {
+      // router.currentRoute => this.$route 匹配当前路由 fullpath匹配路由
+      redirect: this.$router.currentRoute.fullPath
+    }
+  })
+}
+export default request
